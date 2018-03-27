@@ -57,7 +57,7 @@ def analyse(ndays):
     x = price_date[-ndays:]
     y = close_price[-ndays:]
 
-    # Usual statistics
+    # Usual statistics2
     print('Average value = ', np.average(y))
     print('Variance = ', np.var(y, ddof=1))
 
@@ -116,9 +116,9 @@ data_size = close_price.size
 print ('Dataset size = ', data_size)
 
 # Timespans
-short_term = 30 # days
-med_term = 120 # days
-long_term = data_size # days
+short_term = 7 # days
+med_term = 90 # days
+long_term = 365 # days
 
 # Short-term analysis
 

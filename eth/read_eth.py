@@ -50,6 +50,40 @@ def jackknife_var(arr):
         jack_var += np.power(jack_avg-avg[i], 2)
     return (size - 1)*jack_var/size
 
+# Data analysis routine
+def analyse(ndays):
+    
+    # Select data
+    x = price_date[-ndays:]
+    y = close_price[-ndays:]
+
+    # Usual statistics
+    print('Average value = ', np.average(y))
+    print('Variance = ', np.var(y, ddof=1))
+
+    # Bootstrapping analysis
+    size = int(0.7*ndays)
+    count = 10000
+    print('Bootstrapping ({1} samples of size {0}):'.format(size, count))
+    print('\t Average value = ', bootstrap_avg(y, size, count))
+    print('\t Variance = ', bootstrap_var(y, size, count))
+
+    # Jackknife analysis
+    print('Jackknife:')
+    print('\t Average value = ', jackknife_avg(y))
+    print('\t Variance = ', jackknife_var(y))
+
+    # Regression
+    print('Linear regression:')
+    x_days = np.array([(day - x[0]).days for day in x])
+    a, b, r_value, p_value, std_err = stats.linregress(x_days, y)
+    if b < 0:
+        print('\t y(x) = ', a, 'x', ' - ', np.abs(b))
+    else:
+        print('\t y(x) = ', a, 'x', ' + ', b)
+    print('\t with r-value = {0}, p-value = {1} and std-err = {2}'.format(r_value, p_value, std_err))
+    y_fit = a*x_days + b
+
 # Main program    
 print('ETHUSD')
 
@@ -89,18 +123,19 @@ long_term = data_size # days
 # Short-term analysis
 
 print('Short-term analysis:')
-print(short_term, ' days')
+ndays = short_term
+print(ndays, ' days')
 
 # Select data
-x = price_date[-short_term:]
-y = close_price[-short_term:]
+x = price_date[-ndays:]
+y = close_price[-ndays:]
 
 # Usual statistics
 print('Average value = ', np.average(y))
 print('Variance = ', np.var(y, ddof=1))
 
 # Bootstrapping analysis
-size = int(0.7*short_term)
+size = int(0.7*ndays)
 count = 10000
 print('Bootstrapping ({1} samples of size {0}):'.format(size, count))
 print('\t Average value = ', bootstrap_avg(y, size, count))
@@ -114,17 +149,108 @@ print('\t Variance = ', jackknife_var(y))
 # Regression
 print('Linear regression:')
 x_days = np.array([(day - x[0]).days for day in x])
-print(x_days)
 a, b, r_value, p_value, std_err = stats.linregress(x_days, y)
 if b < 0:
-    print('y(x) = ', a, 'x', ' - ', np.abs(b))
+    print('\t y(x) = ', a, 'x', ' - ', np.abs(b))
 else:
-    print('y(x) = ', a, 'x', ' + ', b)
-print('with r-value = {0}, p-value = {1} and std-err = {2}'.format(r_value, p_value, std_err))
+    print('\t y(x) = ', a, 'x', ' + ', b)
+print('\t with r-value = {0}, p-value = {1} and std-err = {2}'.format(r_value, p_value, std_err))
 y_fit = a*x_days + b
 
 # Plot
-plt.title('Short-term analysis')
+plt.title('Medium-term analysis')
+plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
+#plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
+plt.plot(x, y, 'r*')
+plt.plot(x, y_fit)
+plt.gcf().autofmt_xdate()
+plt.show()
+
+# Medium-term analysis
+
+print('Medium-term analysis:')
+ndays = med_term
+print(ndays, ' days')
+
+# Select data
+x = price_date[-ndays:]
+y = close_price[-ndays:]
+
+# Usual statistics
+print('Average value = ', np.average(y))
+print('Variance = ', np.var(y, ddof=1))
+
+# Bootstrapping analysis
+size = int(0.7*ndays)
+count = 10000
+print('Bootstrapping ({1} samples of size {0}):'.format(size, count))
+print('\t Average value = ', bootstrap_avg(y, size, count))
+print('\t Variance = ', bootstrap_var(y, size, count))
+
+# Jackknife analysis
+print('Jackknife:')
+print('\t Average value = ', jackknife_avg(y))
+print('\t Variance = ', jackknife_var(y))
+
+# Regression
+print('Linear regression:')
+x_days = np.array([(day - x[0]).days for day in x])
+a, b, r_value, p_value, std_err = stats.linregress(x_days, y)
+if b < 0:
+    print('\t y(x) = ', a, 'x', ' - ', np.abs(b))
+else:
+    print('\t y(x) = ', a, 'x', ' + ', b)
+print('\t with r-value = {0}, p-value = {1} and std-err = {2}'.format(r_value, p_value, std_err))
+y_fit = a*x_days + b
+
+# Plot
+plt.title('Medium-term analysis')
+plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
+#plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
+plt.plot(x, y, 'r*')
+plt.plot(x, y_fit)
+plt.gcf().autofmt_xdate()
+plt.show()
+
+# Long-term analysis
+
+print('Long-term analysis:')
+ndays = long_term
+print(ndays, ' days')
+
+# Select data
+x = price_date[-ndays:]
+y = close_price[-ndays:]
+
+# Usual statistics
+print('Average value = ', np.average(y))
+print('Variance = ', np.var(y, ddof=1))
+
+# Bootstrapping analysis
+size = int(0.7*ndays)
+count = 10000
+print('Bootstrapping ({1} samples of size {0}):'.format(size, count))
+print('\t Average value = ', bootstrap_avg(y, size, count))
+print('\t Variance = ', bootstrap_var(y, size, count))
+
+# Jackknife analysis
+print('Jackknife:')
+print('\t Average value = ', jackknife_avg(y))
+print('\t Variance = ', jackknife_var(y))
+
+# Regression
+print('Linear regression:')
+x_days = np.array([(day - x[0]).days for day in x])
+a, b, r_value, p_value, std_err = stats.linregress(x_days, y)
+if b < 0:
+    print('\t y(x) = ', a, 'x', ' - ', np.abs(b))
+else:
+    print('\t y(x) = ', a, 'x', ' + ', b)
+print('\t with r-value = {0}, p-value = {1} and std-err = {2}'.format(r_value, p_value, std_err))
+y_fit = a*x_days + b
+
+# Plot
+plt.title('Long-term analysis')
 plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
 #plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
 plt.plot(x, y, 'r*')

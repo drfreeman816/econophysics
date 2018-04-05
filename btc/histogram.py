@@ -8,6 +8,7 @@ import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as pltdates
+from sklearn.neighbors import KernelDensity
 #from scipy import stats
 
 # Main program    
@@ -56,19 +57,13 @@ plt.plot(price_date, r)
 plt.gcf().autofmt_xdate()
 plt.show()
 
-# Histogram
-#hist, bin_edges = np.histogram(r, bins=200)
-
-# Plot
-plt.title('Histogram')
-plt.hist(r, bins=75)
-plt.show()
-
 # Kernel Density Estimation
 nbins = 75
-r_hist, r_hist_edges = np.histogram(r, bins=nbins)
-h = (r_hist_edges[-1], r_hist_edges[0])/nbins
-x_kde = np.linspace(r_hist_edges[0], r_hist_edges[-1], nbins)
-
-#for x in x_kde:
-    
+hist, bine = np.histogram(close_price, bins=nbins)
+binsize = (bine[-1] - bine[0])/nbins
+xhist = bine - (binsize/2)
+xhist = np.delete(xhist, 0)
+kde = KernelDensity(kernel='epanechnikov').fit(np.array([xhist, hist]))
+plt.title('KDE Epanechnikov')
+plt.plot(kde.score_samples(np.array([xhist, hist])))
+plt.show()

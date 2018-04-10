@@ -2,21 +2,21 @@ import os
 
 os.system('clear')
 
-#import time
-import calendar
-import datetime as dt
+# Numerical libs
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as pltdates
+# Date parsing libs
+import datetime as dt
+import calendar
+# Kernel Density Estimation lib
 from sklearn.neighbors import KernelDensity
-from scipy import stats
 
-# Main program    
-print('BTCUSD Return Histogram')
+print('Trab2 ETHUSD')
 
-# Read data
-data_file = open('btc.dat', 'r')
+data_file = open('eth.dat', 'r')
 
+# Data arrays
 price_date = []
 open_price = np.array([])
 high_price = np.array([])
@@ -25,10 +25,11 @@ close_price = np.array([])
 volume = np.array([])
 m_cap = np.array([])
 
+# Read data file line by line
 for line in data_file:
-    if not line.startswith('#'):
+    if not line.startswith('#'): # Skip comments
         row = line.split()
-        # Date parsing
+        # Date parsing 
         month = list(calendar.month_abbr).index(row[0])
         price_date.insert(0, dt.date(int(row[2]), month, int(row[1])))
         # Data parsing
@@ -43,18 +44,60 @@ for line in data_file:
 data_size = close_price.size
 print ('Dataset size = ', data_size)
 
+# Plot dataset
+plt.title('Dataset')
+plt.ylabel('USD', fontsize=16)
+plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
+#plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
+plt.plot(price_date, close_price, 'r.')
+plt.gcf().autofmt_xdate()
+plt.show()
+
 # Define return
-r = np.log(close_price) - np.log(np.roll(close_price,1))
+r = np.log(close_price) - np.log(np.roll(close_price, 1))
+r = np.delete(r, [0,1])
+price_date = np.delete(price_date, [0,1])
 
-r = np.delete(r, 0)
-price_date = np.delete(price_date, 0)
-
-# Plot
+# Plot return
 plt.title('ln(Return)')
 plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
 #plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
 plt.plot(price_date, r, linewidth=0.5)
 plt.gcf().autofmt_xdate()
+plt.show()
+
+######################
+#   Wiener-Khinchin  #
+######################
+
+# FFT
+r_fft = np.fft.fft(r)
+S = r_fft * np.conj(r_fft)
+
+# Plot (Power Spectral Density)
+plt.title('DSP')
+plt.ylim((0, 1.1*np.max(S)))
+plt.plot(S[:int(data_size/2)], 'r', linewidth=0.5)
+plt.show()
+
+# IFFT (Autocorrelation)
+A = np.fft.ifft(S)
+A = (1/np.max(A)) * A
+# Plot
+plt.title('Autocorrelation')
+plt.ylim((0, 1.1*np.max(A)))
+plt.plot(A[:int(data_size/2)], 'r', linewidth=0.5)
+plt.show()
+
+# Volatility Cluster
+r_sq = np.square(r)
+r_sq_fft = np.fft.fft(r_sq)
+A_sq = np.fft.ifft(r_sq_fft * np.conj(r_sq_fft))
+A_sq = (1/np.max(A_sq)) * A_sq
+# Plot
+plt.title('Autocorrelation Squared')
+plt.ylim((0, 1.1*np.max(A_sq)))
+plt.plot(A_sq[:int(data_size/2)], 'r', linewidth=0.5)
 plt.show()
 
 # Histogram

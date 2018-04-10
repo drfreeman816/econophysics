@@ -22,8 +22,8 @@ def bootstrap_var(arr, size, count):
     avg = np.array([])
     for i in range(count):
         sample = np.random.choice(arr, size=size, replace=0)
-        avg = np.append(avg, np.average(sample))
-    boot_avg = np.average(avg)
+        avg = np.append(avg, np.mean(sample))
+    boot_avg = np.mean(avg)
     boot_var = 0
     for i in range(count):
         boot_var += np.power(boot_avg-avg[i], 2)
@@ -115,6 +115,15 @@ for line in data_file:
 data_size = close_price.size
 print ('Dataset size = ', data_size)
 
+# Plot
+plt.title('Dataset')
+plt.ylabel('USD', fontsize=16)
+plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
+#plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
+plt.plot(price_date, close_price, 'r*')
+plt.gcf().autofmt_xdate()
+plt.show()
+
 # Timespans
 short_term = 7 # days
 med_term = 90 # days
@@ -158,7 +167,8 @@ print('\t with r-value = {0}, p-value = {1} and std-err = {2}'.format(r_value, p
 y_fit = a*x_days + b
 
 # Plot
-plt.title('Medium-term analysis')
+plt.title('Short-term analysis')
+plt.ylabel('USD', fontsize=16)
 plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
 #plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
 plt.plot(x, y, 'r*')
@@ -205,6 +215,7 @@ y_fit = a*x_days + b
 
 # Plot
 plt.title('Medium-term analysis')
+plt.ylabel('USD', fontsize=16)
 plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
 #plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
 plt.plot(x, y, 'r*')
@@ -251,6 +262,7 @@ y_fit = a*x_days + b
 
 # Plot
 plt.title('Long-term analysis')
+plt.ylabel('USD', fontsize=16)
 plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
 #plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
 plt.plot(x, y, 'r*')

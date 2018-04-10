@@ -11,7 +11,7 @@ import matplotlib.dates as pltdates
 #from scipy import stats
 
 # Main program    
-print('ETHUSD Return Autocorrelation')
+print('BTCUSD Return Autocorrelation')
 
 # Read data
 data_file = open('btc.dat', 'r')
@@ -42,46 +42,59 @@ for line in data_file:
 data_size = close_price.size
 print ('Dataset size = ', data_size)
 
-# Define return
-x = price_date
-y = close_price
+# Plot (Price)
+plt.title('BTC price')
+plt.ylabel('USD')
+plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
+#plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
+plt.plot(price_date, close_price, 'r', linewidth=0.5)
+plt.gcf().autofmt_xdate()
+plt.xlim((price_date[0], price_date[-1]))
+plt.show()
 
-r = np.log(y) - np.log(np.roll(y,1))
+# Define return
+r = np.log(close_price) - np.log(np.roll(close_price,1))
 
 r = np.delete(r, 0)
-x = np.delete(x, 0)
+price_date = np.delete(price_date, 0)
 
 # Plot
 plt.title('ln(Return)')
 plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
 #plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
-plt.plot(x, r, 'r')
+plt.plot(price_date, r, 'r', linewidth=0.5)
 plt.gcf().autofmt_xdate()
+plt.xlim((price_date[0], price_date[-1]))
 plt.show()
 
 # FFT
 r_fft = np.fft.fft(r)
 S = r_fft * np.conj(r_fft)
 
-# Plot
+# Plot (Power Spectral Density)
 plt.title('DSP')
-plt.plot(S[:int(data_size/2)], 'r')
+plt.ylim((0, 1.1*np.max(S)))
+plt.plot(S[:int(data_size/2)], 'r', linewidth=0.5)
 plt.show()
 
-# IFFT
+# IFFT (Autocorrelation)
 A = np.fft.ifft(S)
+A = (1/np.max(A)) * A
 
 # Plot
 plt.title('Autocorrelation')
-plt.plot(A[:int(data_size/2)], 'r')
+plt.ylim((0, 1.1*np.max(A)))
+plt.plot(A[:int(data_size/2)], 'r', linewidth=0.5)
 plt.show()
 
 # Volatility Cluster
 r_sq = np.square(r)
 r_sq_fft = np.fft.fft(r_sq)
 A_sq = np.fft.ifft(r_sq_fft * np.conj(r_sq_fft))
+A_sq = (1/np.max(A_sq)) * A_sq
 
 # Plot
-plt.title('Autocorrelation')
-plt.plot(A_sq[:int(data_size/2)], 'r')
+plt.title('Autocorrelation Squared')
+plt.ylim((0, 1.1*np.max(A_sq)))
+plt.plot(A_sq[:int(data_size/2)], 'r', linewidth=0.5)
 plt.show()

@@ -334,6 +334,6 @@ plt.show()
 print('Kolmogorov–Smirnov Test')
 
 print('Linear Fit:')
-print(stats.kstest(np.exp(r_a), stats.pareto(alpha_a).pdf))
+print(stats.kstest(np.exp(r_a), 'pareto', args=(alpha_a, 0, 1)))
 print('Hill Estimator:')
-print(stats.kstest(np.exp(r_a), stats.pareto(alpha_H_a).pdf))
+print(stats.kstest(np.exp(r_a), 'pareto', args=(alpha_H_a, 0, 1)))

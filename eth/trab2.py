@@ -9,10 +9,16 @@ import matplotlib.dates as pltdates
 # Date parsing libs
 import datetime as dt
 import calendar
+# Linear regression
+from scipy import stats
 # Kernel Density Estimation lib
 from sklearn.neighbors import KernelDensity
 
 print('Trab2 ETHUSD')
+
+###################
+#   Data parsing  #
+###################
 
 data_file = open('eth.dat', 'r')
 
@@ -49,7 +55,7 @@ plt.title('Dataset')
 plt.ylabel('USD', fontsize=16)
 plt.gca().xaxis.set_major_formatter(pltdates.DateFormatter('%d/%m/%Y'))
 #plt.gca().xaxis.set_major_locator(pltdates.DayLocator())
-plt.plot(price_date, close_price, 'r.')
+plt.plot(price_date, close_price, 'r', linewidth=0.5)
 plt.gcf().autofmt_xdate()
 plt.show()
 
@@ -66,22 +72,24 @@ plt.plot(price_date, r, linewidth=0.5)
 plt.gcf().autofmt_xdate()
 plt.show()
 
-######################
-#   Wiener-Khinchin  #
-######################
+###############################################
+#   Wiener-Khinchin Autocorrelation Analysis  #
+###############################################
+
+print('Wiener-Khinchin Autocorrelation Analysis:')
 
 # FFT
 r_fft = np.fft.fft(r)
-S = r_fft * np.conj(r_fft)
+S_r = r_fft * r_fft.conjugate()
 
 # Plot (Power Spectral Density)
 plt.title('DSP')
-plt.ylim((0, 1.1*np.max(S)))
-plt.plot(S[:int(data_size/2)], 'r', linewidth=0.5)
+plt.ylim((0, 1.1*np.max(S_r)))
+plt.plot(S_r[:int(data_size/2)], 'r', linewidth=0.5)
 plt.show()
 
 # IFFT (Autocorrelation)
-A = np.fft.ifft(S)
+A = np.fft.ifft(S_r)
 A = (1/np.max(A)) * A
 # Plot
 plt.title('Autocorrelation')
@@ -89,7 +97,7 @@ plt.ylim((0, 1.1*np.max(A)))
 plt.plot(A[:int(data_size/2)], 'r', linewidth=0.5)
 plt.show()
 
-# Volatility Cluster
+# Volatility Clusters
 r_sq = np.square(r)
 r_sq_fft = np.fft.fft(r_sq)
 A_sq = np.fft.ifft(r_sq_fft * np.conj(r_sq_fft))
@@ -100,59 +108,232 @@ plt.ylim((0, 1.1*np.max(A_sq)))
 plt.plot(A_sq[:int(data_size/2)], 'r', linewidth=0.5)
 plt.show()
 
+#################################
+#   Kernel Density Estimation   #
+#################################
+
 # Histogram
-N = 75
-plt.hist(r, bins=N, normed=True)
+print('Histogram:')
+nbins = 50
+print('number of bins = {}'.format(nbins))
+plt.hist(r, bins=nbins, density=True)
 
 # Kernel Density Estimation
+print('Kernel Density Estimation (Epanechnikov)')
 x_plot = np.linspace(np.min(r), np.max(r), 1000)
-bw = (x_plot[-1] - x_plot[0])/N
-kde = KernelDensity(kernel='epanechnikov', bandwidth=0.01).fit(r[:,np.newaxis])
+bw = (x_plot[-1] - x_plot[0])/nbins
+print('bandwidth = {}'.format(bw))
+kde = KernelDensity(kernel='epanechnikov', bandwidth=bw).fit(r[:,np.newaxis])
 plt.title('KDE Epanechnikov')
 plt.xlabel('ln(return)')
 plt.ylabel('P(return)')
 Plog = kde.score_samples(x_plot[:,np.newaxis])
-plt.plot(x_plot, np.exp(Plog), 'r', linewidth=1.0)
+plt.plot(x_plot, np.exp(Plog), 'r', linewidth=0.5)
 plt.show()
 
-# Pareto dist analysis
-plt.title('Pareto distribution analysis')
+###############################
+#   Pareto Distribution Fit   #
+###############################
+
+print('Pareto Distribution Fit')
+
+# Plot (log-log) of estimated return distribution
+plt.title('Return KDE (log-log)')
 plt.xlabel('ln(return)')
 plt.ylabel('ln(P(return))')
 plt.plot(x_plot, Plog, linewidth=1.0)
 
-x_fit = np.linspace(0.006, 0.08, 1000)
+# Linear Fit on log-log plot
 
-y_fit = kde.score_samples(x_fit[:,np.newaxis])
+# Positive Returns
+print('Positive Returns')
 
-a, b, r_val, p_val, std_err = stats.linregress(x_fit, y_fit)
+print('Linear Fit:')
+# Select linear region
+x_fit_p = np.linspace(0.004, 0.065, 1000)
+
+y_fit_p = kde.score_samples(x_fit_p[:,np.newaxis])
+a, b, r_val, p_val, std_err = stats.linregress(x_fit_p, y_fit_p)
 
 if b < 0:
     print('y(x) = ', a, 'x', ' - ', np.abs(b))
 else:
     print('y(x) = ', a, 'x', ' + ', b)
 
-y_fit = a*x_fit + b
+y_fit_p = a*x_fit_p + b
 
-alpha = -a-1
-x_0 = np.exp((b-np.log(alpha))/alpha)
-print('alpha = ', alpha)
-print('x_0 = ', x_0)
+alpha_p = -a-1
+x_0_p = np.exp((b-np.log(alpha_p))/alpha_p)
+print('alpha = ', alpha_p)
+print('x_0 = {0} (e={1})'.format(x_0_p, np.absolute(1-x_0_p)))
 
-plt.plot(x_fit, y_fit)
-
-plt.show()
+plt.plot(x_fit_p, y_fit_p, 'r', linewidth=0.5)
 
 # Hill Estimator
-alpha_H = (data_size-1)/(np.sum(np.log(np.divide(np.exp(r), x_0))))
-print('Hill: alpha = ', alpha_H)
+print('Hill estimator:')
+r_p = r[r > 0.0]
+alpha_H_p = np.size(r_p)/np.sum(np.log(np.divide(np.exp(r_p), x_0_p)))
+#x_0_H = np.exp((b-np.log(alpha_H_p))/alpha_H_p)
+print('Hill: alpha = ', alpha_H_p)
+print('Relative error = {}'.format(np.absolute(alpha_p-alpha_H_p)/alpha_H_p))
+#print('Hill: x_0 = ', x_0_H)
+#print('Relative error = {}'.format(np.absolute(x_0-x_0_H)/x_0_H))
 
-# Plot Pareto
-plt.hist(np.exp(r), bins=100, normed=True)
-x_plot = np.linspace(0.6, 1, 1000)
-y_plot = alpha*np.power(x_0, alpha)/np.power(x_plot, 1-alpha)
-y_plot_H = alpha*np.power(x_0, alpha_H)/np.power(x_plot, 1-alpha_H)
-plt.plot(x_plot, y_plot, label='Fit alpha')
-plt.plot(x_plot, y_plot_H, label='Hill estimator')
+# Negative Returns
+print('Negative Returns')
+
+print('Linear Fit:')
+# Select linear region
+x_fit_n = np.linspace(-0.07, -0.015, 1000)
+
+y_fit_n = kde.score_samples(x_fit_n[:,np.newaxis])
+a, b, r_val, p_val, std_err = stats.linregress(x_fit_n, y_fit_n)
+
+if b < 0:
+    print('y(x) = ', a, 'x', ' - ', np.abs(b))
+else:
+    print('y(x) = ', a, 'x', ' + ', b)
+
+y_fit_n = a*x_fit_n + b
+
+alpha_n = a-1
+x_0_n = np.exp((b-np.log(alpha_n))/alpha_n)
+print('alpha = ', alpha_n)
+print('x_0 = {0} (e={1})'.format(x_0_n, np.absolute(1-x_0_n)))
+
+plt.plot(x_fit_n, y_fit_n, 'r', linewidth=0.5)
+
+# Hill Estimator
+print('Hill estimator:')
+r_n = np.absolute(r[r < 0.0])
+alpha_H_n = np.size(r_n)/np.sum(np.log(np.divide(np.exp(r_n), x_0_n)))
+print('Hill: alpha = ', alpha_H_n)
+print('Relative error = {}'.format(np.absolute(alpha_n-alpha_H_n)/alpha_H_n))
+
+# Plot everything
+plt.show()
+
+# Plot Pareto curves
+plt.hist(np.exp(r), bins=nbins, density=True)
+
+# Positive region
+# Linear Fit Plot
+x_plot = np.linspace(1, np.max(np.exp(r_p)), 1000)
+y_plot = alpha_p * np.power(x_0_p, alpha_p) / np.power(x_plot, 1+alpha_p)
+plt.plot(x_plot, y_plot, 'r', label='Linear Fit')
+# Hill Estimator Plot
+x_plot = np.linspace(1, np.max(np.exp(r_p)), 1000)
+y_plot_H = alpha_H_p / np.power(x_plot, 1+alpha_H_p)
+plt.plot(x_plot, y_plot_H, 'b', label='Hill Estimator')
+
+# Negative region
+# Linear Fit Plot
+x_plot = np.linspace(1, np.max(np.exp(r_n)), 1000)
+y_plot = alpha_n * np.power(x_0_n, alpha_n)/np.power(x_plot, 1+alpha_n)
+plt.plot(2-x_plot, y_plot, 'r', label='Linear Fit')
+# Hill Estimator Plot
+x_plot = np.linspace(1, np.max(np.exp(r_n)), 1000)
+y_plot_H = alpha_H_n / np.power(x_plot, 1+alpha_H_n)
+plt.plot(2-x_plot, y_plot_H, 'b', label='Hill Estimator')
+
 plt.legend()
 plt.show()
+
+#############################################################
+#   Kernel Density Estimation (Absolute Value of Returns)   #
+#############################################################
+
+print('Analysis of the Absolute Value of Returns')
+
+# Absolute Value of Returns
+r_a = np.absolute(r)
+
+# Histogram
+print('Histogram:')
+nbins = 50
+print('number of bins = {}'.format(nbins))
+plt.hist(r_a, bins=nbins, density=True)
+
+# Kernel Density Estimation
+print('Kernel Density Estimation (Epanechnikov)')
+x_plot = np.linspace(np.min(r_a), np.max(r_a), 1000)
+bw = (x_plot[-1] - x_plot[0])/nbins
+print('bandwidth = {}'.format(bw))
+kde = KernelDensity(kernel='epanechnikov', bandwidth=bw).fit(r_a[:,np.newaxis])
+plt.title('KDE Epanechnikov (abs)')
+plt.xlabel('ln(return)')
+plt.ylabel('P(return)')
+Plog = kde.score_samples(x_plot[:,np.newaxis])
+plt.plot(x_plot, np.exp(Plog), 'r', linewidth=0.5)
+plt.show()
+
+###############################
+#   Pareto Distribution Fit   #
+###############################
+
+print('Pareto Distribution Fit')
+
+# Plot (log-log) of estimated return distribution
+plt.title('Return KDE (log-log)')
+plt.xlabel('ln(return)')
+plt.ylabel('ln(P(return))')
+plt.plot(x_plot, Plog, linewidth=1.0)
+
+# Linear Fit on log-log plot
+
+print('Linear Fit:')
+# Select linear region
+x_fit_a = np.linspace(0.009, 0.135, 1000)
+
+y_fit_a = kde.score_samples(x_fit_a[:,np.newaxis])
+a, b, r_val, p_val, std_err = stats.linregress(x_fit_a, y_fit_a)
+
+if b < 0:
+    print('y(x) = ', a, 'x', ' - ', np.abs(b))
+else:
+    print('y(x) = ', a, 'x', ' + ', b)
+
+y_fit_a = a*x_fit_a + b
+
+alpha_a = -a-1
+x_0_a = np.exp((b-np.log(alpha_a))/alpha_a)
+print('alpha = ', alpha_a)
+print('x_0 = {0} (e={1})'.format(x_0_a, np.absolute(1-x_0_a)))
+
+plt.plot(x_fit_a, y_fit_a, 'r', linewidth=0.5)
+
+# Hill Estimator
+print('Hill estimator:')
+alpha_H_a = np.size(r_a)/np.sum(np.log(np.divide(np.exp(r_a), x_0_a)))
+#x_0_H = np.exp((b-np.log(alpha_H_p))/alpha_H_p)
+print('Hill: alpha = ', alpha_H_a)
+print('Relative error = {}'.format(np.absolute(alpha_a-alpha_H_a)/alpha_H_a))
+#print('Hill: x_0 = ', x_0_H)
+#print('Relative error = {}'.format(np.absolute(x_0-x_0_H)/x_0_H))
+
+plt.show()
+
+# Plot Pareto curve
+plt.hist(np.exp(r_a), bins=nbins, density=True)
+# Linear Fit Plot
+x_plot = np.linspace(x_0_a, np.max(np.exp(r_a)), 1000)
+y_plot = alpha_a*np.power(x_0_a, alpha_a)/np.power(x_plot, 1+alpha_a)
+plt.plot(x_plot, y_plot, 'r', label='Linear Fit')
+# Hill Estimator Plot
+y_plot_H = alpha_H_a/np.power(x_plot, 1+alpha_H_a)
+x_plot = np.linspace(1, np.max(np.exp(r_a)), 1000)
+plt.plot(x_plot, y_plot_H, 'k', label='Hill Estimator')
+
+plt.legend()
+plt.show()
+
+###############################
+#   Kolmogorov–Smirnov Test   #
+###############################
+
+print('Kolmogorov–Smirnov Test')
+
+print('Linear Fit:')
+print(stats.kstest(np.exp(r_a), stats.pareto(alpha_a).pdf))
+print('Hill Estimator:')
+print(stats.kstest(np.exp(r_a), stats.pareto(alpha_H_a).pdf))

@@ -79,7 +79,7 @@ plt.show()
 print('Wiener-Khinchin Autocorrelation Analysis:')
 
 # FFT
-r_fft = np.fft.fft(r)
+r_fft = np.fft.fft(np.hanning(np.size(r))*r)
 S_r = r_fft * r_fft.conjugate()
 
 # Plot (Power Spectral Density)
